@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="description" content="Materijali za odgovaranje, domaći zadaci i beleške našeg odeljenja.">
+  <title>Odeljenje</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Materijali">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23007AFF'/%3E%3Cstop offset='1' stop-color='%23AF52DE'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='15' fill='url(%23g)'/%3E%3Cpath d='M18 22h28M18 32h28M18 42h18' stroke='white' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/js/app.js"></script>
+</head>
+<body>
+  <canvas id="confetti" aria-hidden="true"></canvas>
+
+  <div id="app">
+    <div class="backdrop" aria-hidden="true"><span></span><span></span><span></span></div>
+
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M6 8h12M6 12h12M6 16h7"/></svg>
+          </span>
+          <span id="class-name">Odeljenje</span>
+        </div>
+        <span class="topbar-title" aria-hidden="true">Materijali</span>
+        <button class="btn btn-primary btn-add" id="add-btn" type="button">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Dodaj materijal
+        </button>
+      </div>
+    </header>
+
+    <div class="ptr" id="ptr" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/></svg>
+    </div>
+
+    <main class="page">
+      <section class="hero">
+        <p class="eyebrow" id="today"></p>
+        <h1 class="display">Materijali</h1>
+        <p class="hero-sub" id="stats">&nbsp;</p>
+      </section>
+
+      <section class="controls" aria-label="Filteri">
+        <label class="search">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+          <input id="search" type="search" enterkeyhint="search" placeholder="Pretraži naslove, autore, fajlove…" autocomplete="off" aria-label="Pretraga">
+        </label>
+        <div class="segmented" id="type-filter" role="tablist" aria-label="Vrsta materijala">
+          <span class="segmented-indicator" aria-hidden="true"></span>
+        </div>
+        <div class="chips" id="subject-filter" role="tablist" aria-label="Predmet"></div>
+      </section>
+
+      <section class="grid" id="grid" aria-live="polite"></section>
+
+      <div class="empty" id="empty" hidden>
+        <div class="empty-art" aria-hidden="true">
+          <svg viewBox="0 0 64 64"><rect x="12" y="8" width="40" height="48" rx="8"/><path d="M22 22h20M22 31h20M22 40h12"/></svg>
+        </div>
+        <h2 id="empty-title">Još nema materijala</h2>
+        <p id="empty-text">Budi prvi koji će podeliti nešto sa odeljenjem.</p>
+        <button class="btn btn-primary" id="empty-add" type="button">Dodaj materijal</button>
+      </div>
+
+      <div class="skeletons" id="skeletons" aria-hidden="true">
+        <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+      </div>
+    </main>
+  </div>
+
+  <button class="fab" id="fab" type="button" aria-label="Dodaj materijal">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
+  <!-- Novi materijal -->
+  <div class="sheet" id="upload-sheet" hidden>
+    <div class="sheet-scrim"></div>
+    <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="upload-title" tabindex="-1">
+      <div class="sheet-grab" aria-hidden="true"><span class="grabber"></span></div>
+      <header class="sheet-header">
+        <button class="btn-text" type="button" data-close>Otkaži</button>
+        <h2 id="upload-title">Novi materijal</h2>
+        <span class="sheet-header-spacer"></span>
+      </header>
+
+      <form class="sheet-body" id="upload-form" novalidate>
+        <label class="dropzone" id="dropzone">
+          <input type="file" id="file-input" multiple hidden>
+          <span class="dropzone-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+          </span>
+          <span class="dropzone-title">Prevuci fajlove ovde ili <u>izaberi</u></span>
+          <span class="dropzone-hint">PDF, slike, Word, PowerPoint… do 25 MB po fajlu</span>
+        </label>
+        <label class="camera-btn">
+          <input type="file" id="camera-input" accept="image/*" capture="environment" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          Slikaj tablu ili svesku
+        </label>
+        <ul class="file-list" id="file-list"></ul>
+
+        <div class="field">
+          <label for="f-title">Naslov</label>
+          <input id="f-title" name="title" maxlength="120" autocapitalize="sentences" enterkeyhint="next" placeholder="npr. Pitanja za odgovaranje – Prvi svetski rat" data-autofocus>
+        </div>
+
+        <div class="field">
+          <span class="label" id="subject-label">Predmet</span>
+          <div class="chip-picker" id="subject-picker" role="radiogroup" aria-labelledby="subject-label"></div>
+        </div>
+
+        <div class="field">
+          <span class="label" id="type-label">Vrsta</span>
+          <div class="segmented segmented-full" id="type-picker" role="radiogroup" aria-labelledby="type-label">
+            <span class="segmented-indicator" aria-hidden="true"></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="f-desc">Opis <span class="optional">nije obavezno</span></label>
+          <textarea id="f-desc" name="description" autocapitalize="sentences" rows="3" maxlength="4000" placeholder="Šta je unutra, za koji čas, napomene…"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="f-author">Tvoje ime</label>
+          <input id="f-author" name="author" maxlength="40" autocapitalize="words" enterkeyhint="done" placeholder="Ime ili nadimak" autocomplete="given-name">
+        </div>
+
+        <p class="form-error" id="form-error" role="alert"></p>
+
+        <button class="btn btn-primary btn-submit" id="submit-btn" type="submit">
+          <span class="btn-progress" aria-hidden="true"></span>
+          <span class="btn-label">Objavi</span>
+          <svg class="btn-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Detalji materijala -->
+  <div class="sheet" id="detail-sheet" hidden>
+    <div class="sheet-scrim"></div>
+    <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="detail-title" tabindex="-1">
+      <div class="sheet-grab" aria-hidden="true"><span class="grabber"></span></div>
+      <header class="sheet-header">
+        <span class="sheet-header-spacer"></span>
+        <span></span>
+        <button class="btn-text" type="button" data-close>Gotovo</button>
+      </header>
+      <div class="sheet-body" id="detail-body"></div>
+    </div>
+  </div>
+
+  <!-- Šifra odeljenja -->
+  <div class="gate" id="gate" hidden>
+    <form class="gate-card" id="gate-form">
+      <span class="brand-mark brand-mark-lg" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M6 8h12M6 12h12M6 16h7"/></svg>
+      </span>
+      <h1 id="gate-title">Dobrodošli</h1>
+      <p>Unesi šifru odeljenja da vidiš materijale.</p>
+      <input id="gate-code" type="password" placeholder="Šifra odeljenja" autocomplete="current-password" aria-label="Šifra odeljenja">
+      <p class="form-error" id="gate-error" role="alert"></p>
+      <button class="btn btn-primary" type="submit">Uđi</button>
+    </form>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+</body>
+</html>
