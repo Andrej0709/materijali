@@ -11,7 +11,7 @@ Vercel nema trajni disk, pa aplikacija tamo čuva **fajlove u Vercel Blob**, a *
 1. Na [vercel.com](https://vercel.com) → **Add New… → Project** → izaberi ovaj GitHub repo → **Deploy**.
    (Framework Preset ostavi na *Other*; sve je već podešeno u `vercel.json`.)
 2. U projektu otvori **Storage** → **Create Database** → **Blob** → poveži sa projektom.
-   Ovo automatski dodaje `BLOB_READ_WRITE_TOKEN`.
+   Ovo automatski dodaje `BLOB_STORE_ID` (noviji način) ili `BLOB_READ_WRITE_TOKEN` (stariji); aplikacija radi sa oba.
 3. Opet **Storage** → **Create Database** → **Upstash for Redis** (Marketplace) → poveži sa projektom.
    Ovo automatski dodaje `KV_REST_API_URL` i `KV_REST_API_TOKEN`.
 4. **Settings → Environment Variables** → dodaj:

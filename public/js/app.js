@@ -838,7 +838,10 @@ const slugify = (name) => {
 const randomHex = (bytes) => [...crypto.getRandomValues(new Uint8Array(bytes))].map((b) => b.toString(16).padStart(2, '0')).join('');
 
 async function uploadToBlob(onProgress) {
-  const { upload } = await import('./vendor/blob-client.js');
+  const blobClient = await import('./vendor/blob-client.js');
+  // Noviji Blob store-ovi (OIDC) koriste presigned linkove umesto klijentskog tokena
+  const presigned = state.session.blobAuth === 'oidc';
+  const upload = presigned ? blobClient.uploadPresigned : blobClient.upload;
   const total = selected.reduce((sum, s) => sum + s.file.size, 0) || 1;
   const loaded = new Map();
   const report = () => onProgress([...loaded.values()].reduce((a, b) => a + b, 0) / total);
@@ -852,7 +855,7 @@ async function uploadToBlob(onProgress) {
       const blob = await upload(`m/${randomHex(16)}/${slugify(file.name)}`, file, {
         access: 'public',
         handleUploadUrl: '/api/upload',
-        multipart: file.size > 8 * 1024 * 1024,
+        multipart: !presigned && file.size > 8 * 1024 * 1024,
         onUploadProgress: (e) => {
           loaded.set(file, e.loaded);
           report();
