@@ -1095,6 +1095,8 @@ $('#gate-form').addEventListener('submit', async (e) => {
   const error = $('#gate-error');
   try {
     await api('/api/session', { method: 'POST', body: JSON.stringify({ code: input.value }) });
+    // Tek posle prijave server kaže kako se šalju fajlovi
+    state.session = { ...state.session, ...(await api('/api/session')) };
     error.textContent = '';
     const gate = $('#gate');
     const done = () => (gate.hidden = true);
