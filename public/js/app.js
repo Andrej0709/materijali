@@ -868,7 +868,54 @@ async function uploadToBlob(onProgress) {
   return selected.map((s) => results.get(s.file));
 }
 
+// B2 / R2: server da potpisan link, fajl ide direktno u bucket (XHR zbog trake napretka)
+function putWithProgress(url, file, contentType, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', url);
+    xhr.setRequestHeader('Content-Type', contentType);
+    xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(e.loaded);
+    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Skladište je vratilo ${xhr.status}`)));
+    xhr.onerror = () => reject(new Error('Nema veze sa skladištem.'));
+    xhr.send(file);
+  });
+}
+
+async function uploadToS3(onProgress) {
+  const total = selected.reduce((sum, s) => sum + s.file.size, 0) || 1;
+  const loaded = new Map();
+  const report = () => onProgress([...loaded.values()].reduce((a, b) => a + b, 0) / total);
+  const queue = [...selected];
+  const results = new Map();
+  async function worker() {
+    while (queue.length) {
+      const { file } = queue.shift();
+      const { uploadUrl, key, contentType } = await api('/api/upload', {
+        method: 'POST',
+        body: JSON.stringify({ name: file.name, size: file.size })
+      });
+      await putWithProgress(uploadUrl, file, contentType, (bytes) => {
+        loaded.set(file, bytes);
+        report();
+      });
+      results.set(file, { key, name: file.name, size: file.size });
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(3, selected.length) }, worker));
+  return selected.map((s) => results.get(s.file));
+}
+
 async function sendPost(fields, onProgress) {
+  if (state.session.upload === 's3') {
+    let files = [];
+    try {
+      files = selected.length ? await uploadToS3(onProgress) : [];
+    } catch (err) {
+      console.error(err);
+      throw new Error(err.message?.startsWith('Fajl') || err.message?.startsWith('Tip') ? err.message : 'Slanje fajla nije uspelo. Proveri internet i probaj ponovo.');
+    }
+    return api('/api/posts', { method: 'POST', body: JSON.stringify({ ...fields, files }) });
+  }
   if (state.session.upload === 'blob') {
     let files = [];
     try {

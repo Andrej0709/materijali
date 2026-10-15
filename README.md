@@ -24,6 +24,36 @@ Ako nešto od ovoga fali, aplikacija na ekranu napiše šta nije povezano.
 
 **Napomena:** fajlovi u Blobu imaju javne, ali nepogodive linkove (nasumičan deo od 32 znaka). Linkove vide samo oni koji znaju šifru odeljenja.
 
+## Više prostora: Backblaze B2 (10 GB besplatno, bez kartice)
+
+Vercel Blob ima samo 1 GB. Kad postaviš B2, **novi** fajlovi idu u B2, a stari ostaju u Blobu i rade normalno. Fajlovi u B2 su privatni: otvaraju se samo preko kratkotrajnih potpisanih linkova koje aplikacija daje ulogovanima.
+
+1. Napravi nalog na [backblaze.com](https://www.backblaze.com/sign-up/cloud-storage) (B2 Cloud Storage). Za **Region** izaberi **EU Central** (najbliže Srbiji; kasnije ne može da se menja).
+2. **Buckets → Create a Bucket**
+   - Bucket Unique Name: npr. `materijali-34-tvojenime` (mora biti jedinstveno na celom B2)
+   - Files in Bucket are: **Private**
+   - Ostalo ostavi kako jeste → **Create a Bucket**
+   - Prepiši **Endpoint** sa kartice bucketa, npr. `s3.eu-central-003.backblazeb2.com`
+3. **Application Keys → Add a New Application Key**
+   - Name: `materijali`
+   - Allow access to Bucket(s): **All** (potrebno da aplikacija sama podesi CORS)
+   - Type of Access: **Read and Write**
+   - Prepiši **keyID** i **applicationKey** — applicationKey se prikazuje samo jednom!
+4. Na Vercelu, **Settings → Environment Variables**, dodaj:
+   - `S3_ENDPOINT` = `https://` + Endpoint, npr. `https://s3.eu-central-003.backblazeb2.com`
+   - `S3_BUCKET` = ime bucketa
+   - `S3_ACCESS_KEY_ID` = keyID
+   - `S3_SECRET_ACCESS_KEY` = applicationKey
+5. **Redeploy**. Pri prvom slanju aplikacija sama podesi CORS na bucketu.
+
+Besplatno: 10 GB prostora; preuzimanja su besplatna do 3× količine sačuvanih podataka mesečno. Bez kartice B2 ne može ništa da naplati — ako se pređe limit, samo privremeno stane.
+
+**Cloudflare R2** (10 GB, neograničeno preuzimanje, ali traži karticu) radi sa istim promenljivim: `S3_ENDPOINT` = `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`, ključ napravi u **R2 → Manage API Tokens** (Object Read & Write). Tom ključu nije dozvoljeno da menja CORS, pa u bucketu → **Settings → CORS Policy** nalepi:
+
+```json
+[{ "AllowedOrigins": ["*"], "AllowedMethods": ["PUT", "GET", "HEAD"], "AllowedHeaders": ["content-type", "range"], "MaxAgeSeconds": 86400 }]
+```
+
 ## Lokalno pokretanje
 
 Potreban je [Node.js](https://nodejs.org) 20 ili noviji.
@@ -42,7 +72,8 @@ Otvori http://localhost:3000. Lokalno se fajlovi i baza čuvaju u folderu `data/
 | `CLASS_NAME` | Ime odeljenja u zaglavlju | `Naše odeljenje` |
 | `CLASS_CODE` | Šifra za ulaz. Prazno = bez šifre. | prazno |
 | `SESSION_SECRET` | Tajna za kolačić prijave | `odeljenje` |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob (fajlovi) | — |
+| `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | Backblaze B2 ili Cloudflare R2 (fajlovi, 10 GB). Ako su postavljeni, imaju prednost nad Blobom. | — |
+| `BLOB_STORE_ID` / `BLOB_READ_WRITE_TOKEN` | Vercel Blob (fajlovi, 1 GB) | — |
 | `KV_REST_API_URL` / `KV_REST_API_TOKEN` | Upstash Redis (podaci). Rade i `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`. | — |
 | `PORT`, `DATA_DIR` | Samo lokalno | `3000`, `./data` |
 
@@ -73,6 +104,7 @@ Pravljene po principima iz Apple-ovog *Designing Fluid Interfaces*:
 api/index.js           Vercel funkcija (sve /api/* rute)
 lib/app.js             Express rute: objave, upload, šifra
 lib/store.js           Podaci: Redis na Vercelu, JSON fajl lokalno
+lib/s3.js              Fajlovi u Backblaze B2 / Cloudflare R2
 lib/config.js          Podešavanja iz env promenljivih
 server.js              Lokalni server
 vercel.json            Podešavanje za Vercel

@@ -12,6 +12,6 @@ server.use(app);
 
 server.listen(PORT, () => {
   console.log(`\n  ${CLASS_NAME} radi na http://localhost:${PORT}`);
-  console.log(`  Fajlovi: ${UPLOAD_MODE === 'blob' ? 'Vercel Blob' : 'lokalni disk'}`);
+  console.log(`  Fajlovi: ${{ s3: 'B2/R2 (S3)', blob: 'Vercel Blob', local: 'lokalni disk' }[UPLOAD_MODE]}`);
   console.log(CLASS_CODE ? '  Šifra odeljenja je uključena.\n' : '  Bez šifre (postavi CLASS_CODE da je uključiš).\n');
 });
